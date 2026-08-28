@@ -833,10 +833,12 @@ static bool StartMainThread(HMODULE hMod)
 
 static void MainThreadBody(LPVOID lpReserved)
 {
+	// Otomatik guncelleme devre disi birakildi
+	/*
 	if (Updater::CheckAndSchedule()) {
-		// The replacement process waits until this DLL leaves the host.
 		return;
 	}
+	*/
 	// Lisans Dogrulama Kontrolu (Auth Layer)
 	Auth::Response auth = Auth::Verify();
 	if (!auth.success) {
