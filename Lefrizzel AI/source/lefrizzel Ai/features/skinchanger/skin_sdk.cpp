@@ -135,28 +135,28 @@ const char* CEconItemDefinition::ItemTypeName() const
 const char* SkinSdk::GetKnifeModelPath(uint16_t defIndex)
 {
 	switch (defIndex) {
-	case 500: return "weapons/models/knife/knife_bayonet.vmdl";
-	case 503: return "weapons/models/knife/knife_css.vmdl";
-	case 505: return "weapons/models/knife/knife_flip.vmdl";
-	case 506: return "weapons/models/knife/knife_gut.vmdl";
-	case 507: return "weapons/models/knife/knife_karambit.vmdl";
-	case 508: return "weapons/models/knife/knife_m9_bayonet.vmdl";
-	case 509: return "weapons/models/knife/knife_tactical.vmdl";
-	case 512: return "weapons/models/knife/knife_falchion.vmdl";
-	case 514: return "weapons/models/knife/knife_survival_bowie.vmdl";
-	case 515: return "weapons/models/knife/knife_butterfly.vmdl";
-	case 516: return "weapons/models/knife/knife_push.vmdl";
-	case 517: return "weapons/models/knife/knife_cord.vmdl";
-	case 518: return "weapons/models/knife/knife_canis.vmdl";
-	case 519: return "weapons/models/knife/knife_ursus.vmdl";
-	case 520: return "weapons/models/knife/knife_gypsy_jackknife.vmdl";
-	case 521: return "weapons/models/knife/knife_outdoor.vmdl";
-	case 522: return "weapons/models/knife/knife_stiletto.vmdl";
-	case 523: return "weapons/models/knife/knife_widowmaker.vmdl";
-	case 525: return "weapons/models/knife/knife_skeleton.vmdl";
-	case 526: return "weapons/models/knife/knife_kukri.vmdl";
-	case 42:  return "weapons/models/knife/knife_default_ct.vmdl";
-	case 59:  return "weapons/models/knife/knife_default_t.vmdl";
+	case 500: return "weapons/models/knife/knife_bayonet/weapon_knife_bayonet.vmdl";
+	case 503: return "weapons/models/knife/knife_css/weapon_knife_css.vmdl";
+	case 505: return "weapons/models/knife/knife_flip/weapon_knife_flip.vmdl";
+	case 506: return "weapons/models/knife/knife_gut/weapon_knife_gut.vmdl";
+	case 507: return "weapons/models/knife/knife_karambit/weapon_knife_karambit.vmdl";
+	case 508: return "weapons/models/knife/knife_m9/weapon_knife_m9.vmdl";
+	case 509: return "weapons/models/knife/knife_tactical/weapon_knife_tactical.vmdl";
+	case 512: return "weapons/models/knife/knife_falchion/weapon_knife_falchion.vmdl";
+	case 514: return "weapons/models/knife/knife_bowie/weapon_knife_bowie.vmdl";
+	case 515: return "weapons/models/knife/knife_butterfly/weapon_knife_butterfly.vmdl";
+	case 516: return "weapons/models/knife/knife_push/weapon_knife_push.vmdl";
+	case 517: return "weapons/models/knife/knife_cord/weapon_knife_cord.vmdl";
+	case 518: return "weapons/models/knife/knife_canis/weapon_knife_canis.vmdl";
+	case 519: return "weapons/models/knife/knife_ursus/weapon_knife_ursus.vmdl";
+	case 520: return "weapons/models/knife/knife_navaja/weapon_knife_navaja.vmdl";
+	case 521: return "weapons/models/knife/knife_outdoor/weapon_knife_outdoor.vmdl";
+	case 522: return "weapons/models/knife/knife_stiletto/weapon_knife_stiletto.vmdl";
+	case 523: return "weapons/models/knife/knife_talon/weapon_knife_talon.vmdl";
+	case 525: return "weapons/models/knife/knife_skeleton/weapon_knife_skeleton.vmdl";
+	case 526: return "weapons/models/knife/knife_kukri/weapon_knife_kukri.vmdl";
+	case 42:  return "weapons/models/knife/knife_default_ct/weapon_knife_default_ct.vmdl";
+	case 59:  return "weapons/models/knife/knife_default_t/weapon_knife_default_t.vmdl";
 	default:  return nullptr;
 	}
 }
@@ -467,21 +467,19 @@ void SkinSdk::SetModel(C_BaseEntity* ent, const char* model)
 	if (!ent || !model || !model[0] || !g_setModel || !Mem::ValidEntity(ent))
 		return;
 
-	// g_setModel is C_CSPlayerPawn::SetModel — only safe for alive player pawns (Agent Changer).
-	// Calling it on weapons, viewmodels, props, or dead/dying pawns corrupts entity physics memory.
-	if (!ent->IsBasePlayer())
-		return;
-
-	int hp = 0;
-	uint8_t life = 0;
-	__try {
-		hp = reinterpret_cast<C_CSPlayerPawn*>(ent)->m_iHealth();
-		life = reinterpret_cast<C_CSPlayerPawn*>(ent)->m_lifeState();
-	} __except (EXCEPTION_EXECUTE_HANDLER) {
-		return;
+	// For player pawns (Agent Changer): only safe when alive
+	if (ent->IsBasePlayer()) {
+		int hp = 0;
+		uint8_t life = 0;
+		__try {
+			hp = reinterpret_cast<C_CSPlayerPawn*>(ent)->m_iHealth();
+			life = reinterpret_cast<C_CSPlayerPawn*>(ent)->m_lifeState();
+		} __except (EXCEPTION_EXECUTE_HANDLER) {
+			return;
+		}
+		if (hp <= 0 || life != 0)
+			return;
 	}
-	if (hp <= 0 || life != 0)
-		return;
 
 	// Deduplicate: If the entity already has this model loaded, do not call g_setModel again.
 	// Repeatedly calling SetModel destroys and recreates the scene node / skeleton, causing worker thread race crashes.

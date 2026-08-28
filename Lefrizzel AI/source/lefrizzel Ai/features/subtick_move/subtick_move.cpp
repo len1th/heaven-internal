@@ -395,7 +395,7 @@ void RewriteBhop(CUserCmd* cmd, C_CSPlayerPawn* pawn)
 	const bool onGround = (flags & FL_ONGROUND) != 0;
 
 	if (!onGround) {
-		// Airborne: strip IN_JUMP from cmd & PB (clean slate so engine never sees held space in air)
+		// Strip jump bits by default while airborne
 		cmd->nButtons.nValue &= ~kJumpMask;
 		cmd->nButtons.nValueChanged &= ~kJumpMask;
 		cmd->nButtons.nValueScroll &= ~kJumpMask;
@@ -416,21 +416,40 @@ void RewriteBhop(CUserCmd* cmd, C_CSPlayerPawn* pawn)
 				|| (cmd->nButtons.nValueChanged & IN_DUCK) != 0;
 			float landFrac = 0.f;
 			if (PredictLandingFracVelocity(pawn, moveSvc, holdingDuck, landFrac)) {
+				// We land this tick: re-inject jump into cmd bitmask and subtick queue
+				cmd->nButtons.nValue |= kJumpMask;
+				cmd->nButtons.nValueChanged |= kJumpMask;
+				cmd->nButtons.nValueScroll |= kJumpMask;
+				if (base->pInButtonState) {
+					base->pInButtonState->nValue |= kJumpMask;
+					base->pInButtonState->nValueChanged |= kJumpMask;
+					base->pInButtonState->nValueScroll |= kJumpMask;
+					base->pInButtonState->SetBits(
+						BUTTON_STATE_PB_BITS_BUTTONSTATE1
+						| BUTTON_STATE_PB_BITS_BUTTONSTATE2
+						| BUTTON_STATE_PB_BITS_BUTTONSTATE3);
+					base->SetBits(BASE_BITS_BUTTONPB);
+				}
 				ApplyLandingJumpVelocity(base, landFrac);
 			}
 		}
 	} else {
-		// On ground: ensure fresh jump rising edge with scroll value
+		// On ground: ensure fresh jump rising edge with scroll value and subtick press
 		cmd->nButtons.nValue |= kJumpMask;
+		cmd->nButtons.nValueChanged |= kJumpMask;
 		cmd->nButtons.nValueScroll |= kJumpMask;
-		if (base && base->pInButtonState) {
-			base->pInButtonState->nValue |= kJumpMask;
-			base->pInButtonState->nValueScroll |= kJumpMask;
-			base->pInButtonState->SetBits(
-				BUTTON_STATE_PB_BITS_BUTTONSTATE1
-				| BUTTON_STATE_PB_BITS_BUTTONSTATE2
-				| BUTTON_STATE_PB_BITS_BUTTONSTATE3);
-			base->SetBits(BASE_BITS_BUTTONPB);
+		if (base) {
+			if (base->pInButtonState) {
+				base->pInButtonState->nValue |= kJumpMask;
+				base->pInButtonState->nValueChanged |= kJumpMask;
+				base->pInButtonState->nValueScroll |= kJumpMask;
+				base->pInButtonState->SetBits(
+					BUTTON_STATE_PB_BITS_BUTTONSTATE1
+					| BUTTON_STATE_PB_BITS_BUTTONSTATE2
+					| BUTTON_STATE_PB_BITS_BUTTONSTATE3);
+				base->SetBits(BASE_BITS_BUTTONPB);
+			}
+			InputInject::SubtickButton(base, IN_JUMP, true, 0.0f);
 		}
 	}
 }

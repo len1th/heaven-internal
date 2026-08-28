@@ -512,10 +512,16 @@ namespace
 					const char* model = SkinSdk::GetKnifeModelPath(cfg.def ? cfg.def : static_cast<uint16_t>(curDef));
 					if (!model) model = target->ModelName();
 					if (model && model[0]) {
-						if (isActive && vm && vm->m_pGameSceneNode())
-							SkinSdk::SetSceneNodeModel(vm->m_pGameSceneNode(), model);
-						if (wEnt && wEnt->m_pGameSceneNode())
-							SkinSdk::SetSceneNodeModel(wEnt->m_pGameSceneNode(), model);
+						if (isActive && vm) {
+							SkinSdk::SetModel(vm, model);
+							if (vm->m_pGameSceneNode())
+								SkinSdk::SetSceneNodeModel(vm->m_pGameSceneNode(), model);
+						}
+						if (wEnt) {
+							SkinSdk::SetModel(wEnt, model);
+							if (wEnt->m_pGameSceneNode())
+								SkinSdk::SetSceneNodeModel(wEnt->m_pGameSceneNode(), model);
+						}
 					}
 					const uint32_t subOff = Off("C_BaseEntity->m_nSubclassID");
 					if (subOff) {
@@ -773,8 +779,10 @@ void SkinChanger::OnFrameStageNotify(int stage)
 				if (CEconItemDefinition* kd = SkinSdk::FindDefByIndex(static_cast<uint16_t>(Config::skin_knife_def)))
 					km = kd->ModelName();
 			}
-			if (km && km[0] && vm && vm->m_pGameSceneNode()) {
-				SkinSdk::SetSceneNodeModel(vm->m_pGameSceneNode(), km);
+			if (km && km[0] && vm) {
+				SkinSdk::SetModel(vm, km);
+				if (vm->m_pGameSceneNode())
+					SkinSdk::SetSceneNodeModel(vm->m_pGameSceneNode(), km);
 			}
 			SkinCfg kcfg{};
 			kcfg.enabled = true;
