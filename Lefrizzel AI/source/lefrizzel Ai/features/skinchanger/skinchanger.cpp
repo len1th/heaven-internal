@@ -114,6 +114,11 @@ namespace
 		const uint32_t o = Off(f);
 		if (o) Field<int32_t>(w, o) = val;
 	}
+	void SetWeaponU32(C_CSWeaponBase* w, const char* f, uint32_t val)
+	{
+		const uint32_t o = Off(f);
+		if (o) Field<uint32_t>(w, o) = val;
+	}
 	void SetWeaponF32(C_CSWeaponBase* w, const char* f, float val)
 	{
 		const uint32_t o = Off(f);
@@ -246,7 +251,7 @@ namespace
 
 	uint64_t MeshMask(bool isKnife, bool legacy)
 	{
-		if (isKnife) return legacy ? 1ull : 2ull;
+		(void)isKnife;
 		return legacy ? 2ull : 1ull;
 	}
 
@@ -261,7 +266,7 @@ namespace
 		if (!accountId) accountId = static_cast<uint32_t>(SkinSdk::InventorySteamId());
 		if (!accountId) accountId = 1;
 
-		SetViewBool(view, "C_EconItemView->m_bDisallowSOC", false);
+		SetViewBool(view, "C_EconItemView->m_bDisallowSOC", true);
 		SetViewBool(view, "C_EconItemView->m_bRestoreCustomMaterialAfterPrecache", true);
 		SetViewBool(view, "C_EconItemView->m_bInitialized", true);
 		SetViewU32(view, "C_EconItemView->m_iAccountID", accountId);
@@ -277,6 +282,8 @@ namespace
 		SetWeaponI32(w, "C_EconEntity->m_nFallbackPaintKit", cfg.paint);
 		SetWeaponI32(w, "C_EconEntity->m_nFallbackSeed", cfg.seed);
 		SetWeaponF32(w, "C_EconEntity->m_flFallbackWear", wear);
+		if (cfg.stattrak)
+			SetWeaponI32(w, "C_EconEntity->m_nFallbackStatTrak", cfg.stattrakCount);
 		// Fallback hard offsets if schema miss (Andromeda parity: direct 0x1680 etc never fails)
 		if (!Off("C_EconEntity->m_nFallbackPaintKit"))
 			*reinterpret_cast<int32_t*>(reinterpret_cast<uint8_t*>(w) + 0x1680) = cfg.paint;
@@ -284,6 +291,16 @@ namespace
 			*reinterpret_cast<int32_t*>(reinterpret_cast<uint8_t*>(w) + 0x1684) = cfg.seed;
 		if (!Off("C_EconEntity->m_flFallbackWear"))
 			*reinterpret_cast<float*>(reinterpret_cast<uint8_t*>(w) + 0x1688) = wear;
+
+		const uint64_t steamId = SkinSdk::InventorySteamId();
+		const uint32_t xuidLow = static_cast<uint32_t>(steamId & 0xFFFFFFFF);
+		const uint32_t xuidHigh = static_cast<uint32_t>((steamId >> 32) & 0xFFFFFFFF);
+		SetWeaponU32(w, "C_EconEntity->m_OriginalOwnerXuidLow", xuidLow ? xuidLow : accountId);
+		SetWeaponU32(w, "C_EconEntity->m_OriginalOwnerXuidHigh", xuidHigh);
+		if (!Off("C_EconEntity->m_OriginalOwnerXuidLow"))
+			*reinterpret_cast<uint32_t*>(reinterpret_cast<uint8_t*>(w) + 0x1678) = xuidLow ? xuidLow : accountId;
+		if (!Off("C_EconEntity->m_OriginalOwnerXuidHigh"))
+			*reinterpret_cast<uint32_t*>(reinterpret_cast<uint8_t*>(w) + 0x167C) = xuidHigh;
 
 		if (cfg.paint > 0) {
 			SkinSdk::SetAttributeValueByName(view, "set item texture preference", static_cast<float>(cfg.paint));
@@ -585,7 +602,7 @@ namespace
 		const bool cfgChanged = s_def != def || s_paint != paint || s_seed != seed || s_wear != wear;
 		if (spawned || g_applyGloves || cfgChanged) {
 			uUpdateFrames = 5;
-			SetViewBool(glove, "C_EconItemView->m_bDisallowSOC", false);
+			SetViewBool(glove, "C_EconItemView->m_bDisallowSOC", true);
 			SetViewBool(glove, "C_EconItemView->m_bRestoreCustomMaterialAfterPrecache", true);
 			SetViewBool(glove, "C_EconItemView->m_bInitialized", true);
 			SetViewU16(glove, "C_EconItemView->m_iItemDefinitionIndex", def);
