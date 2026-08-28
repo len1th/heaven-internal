@@ -467,9 +467,20 @@ void SkinSdk::SetModel(C_BaseEntity* ent, const char* model)
 	if (!ent || !model || !model[0] || !g_setModel || !Mem::ValidEntity(ent))
 		return;
 
-	// g_setModel is C_CSPlayerPawn::SetModel — only safe for player pawns (Agent Changer).
-	// Calling it on weapons, viewmodels, or props corrupts entity physics memory.
+	// g_setModel is C_CSPlayerPawn::SetModel — only safe for alive player pawns (Agent Changer).
+	// Calling it on weapons, viewmodels, props, or dead/dying pawns corrupts entity physics memory.
 	if (!ent->IsBasePlayer())
+		return;
+
+	int hp = 0;
+	uint8_t life = 0;
+	__try {
+		hp = reinterpret_cast<C_CSPlayerPawn*>(ent)->m_iHealth();
+		life = reinterpret_cast<C_CSPlayerPawn*>(ent)->m_lifeState();
+	} __except (EXCEPTION_EXECUTE_HANDLER) {
+		return;
+	}
+	if (hp <= 0 || life != 0)
 		return;
 
 	// Deduplicate: If the entity already has this model loaded, do not call g_setModel again.

@@ -722,7 +722,7 @@ void SkinChanger::OnFrameStageNotify(int stage)
 		// Don't return immediately if we can get pawn anyway (weapon paint with accountId 0 still works for gloves)
 		// For weapon/knife we need inventory for econ def lookup, but that uses EconSchema not inventory, so allow walk with 0 steamId
 	}
-	C_CSPlayerPawn* pawn = H::SafeLocalPlayer();
+	C_CSPlayerPawn* pawn = H::SafeLocalAlive();
 	if (!pawn)
 		return;
 	CCSPlayer_WeaponServices* ws = pawn->GetWeaponServices();
